@@ -1,0 +1,54 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Cache Iceberg jars
+        uses: actions/cache@v4
+        with:
+          path: ~/.ivy2
+          key: ivy-iceberg-${{ hashFiles('meterlake/spark.py') }}
+
+      - name: Install
+        run: pip install -r requirements.txt
+
+      - name: Lint
+        run: ruff check .
+
+      - name: Tests
+        run: pytest -v
+
+      - name: Run the pipeline, then maintain
+        run: |
+          python -m meterlake run --days 10
+          python -m meterlake maintain
+          python -m meterlake report | grep -v '^:: loading settings' | tee report.txt
+
+      - name: Publish the report to the run summary
+        run: |
+          {
+            echo "## Iceberg Write-Audit-Publish report (10 days of meter data)"
+            echo '```'
+            cat report.txt
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"

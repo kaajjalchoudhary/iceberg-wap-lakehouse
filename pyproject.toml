@@ -1,0 +1,18 @@
+[project]
+name = "iceberg-wap-lakehouse"
+version = "1.0.0"
+description = "Write-Audit-Publish pipeline on Apache Iceberg branches with PySpark."
+requires-python = ">=3.10"
+license = { text = "MIT" }
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+addopts = "-ra"
+
+[tool.ruff]
+line-length = 125
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "B", "UP"]
