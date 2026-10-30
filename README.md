@@ -43,7 +43,7 @@ sequenceDiagram
 | **Dynamic partition overwrite** | Gold is rebuilt only for the days a batch touched | [`gold.py`](meterlake/gold.py) |
 | **Metadata tables** | `refs`, `snapshots`, `history`, `files` drive publishing, tests and the report | [`report.py`](meterlake/report.py) |
 | **Time travel** | Tests read the table as of the previous publish | [`tests/test_pipeline.py`](tests/test_pipeline.py) |
-| **Maintenance** | `rewrite_data_files` (applies delete files and moves old files to the new spec), `rewrite_manifests`, `expire_snapshots` | [`maintenance.py`](meterlake/maintenance.py) |
+| **Maintenance** | `rewrite_data_files` (applies delete files and rewrites old-spec files into the new layout), `rewrite_manifests`, `expire_snapshots` | [`maintenance.py`](meterlake/maintenance.py) |
 
 ## Quick start
 
@@ -63,6 +63,34 @@ make test
 ```
 
 With Docker: `docker build -t meterlake . && docker run --rm -v "$PWD/lake:/data/lake" meterlake`
+
+## Sample output
+
+From CI over 10 days of generated data. Every CI run posts this report on its
+[run summary page](https://github.com/kaajjalchoudhary/iceberg-wap-lakehouse/actions/workflows/ci.yml).
+
+```
+Batches (batch_log)
+  batch_id       status     rows_received  rows_added  failed
+  2026-02-05     published  2889           2857
+  2026-02-06     rejected   2900           2867        kwh_in_range: 572 readings outside 0..25.0 kWh
+  2026-02-06.r2  published  2900           2867
+  2026-02-07     published  2879           2865
+  ...
+
+Partition spec now: ['days(reading_ts)']
+Data files by partition spec (readings.files)
+  spec_id  files  rows
+  0        1      11
+  1        13     28607
+```
+
+The firmware-bug delivery never reached `main`; the vendor's re-delivery was published right
+after it. After compaction almost every row lives in the daily layout (spec 1), while a file
+written under the original monthly spec (spec 0) is still read transparently.
+
+Switching `MERGE` from copy-on-write to merge-on-read roughly halved the records written per
+batch (about 5,650 down to about 2,880), because corrections no longer rewrite whole data files.
 
 ## What happens to each batch
 
