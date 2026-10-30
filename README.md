@@ -43,6 +43,7 @@ sequenceDiagram
 | **Dynamic partition overwrite** | Gold is rebuilt only for the days a batch touched | [`gold.py`](meterlake/gold.py) |
 | **Metadata tables** | `refs`, `snapshots`, `history`, `files` drive publishing, tests and the report | [`report.py`](meterlake/report.py) |
 | **Time travel** | Tests read the table as of the previous publish | [`tests/test_pipeline.py`](tests/test_pipeline.py) |
+| **Rollback** | `python -m meterlake rollback` moves `main` back one snapshot and rebuilds gold for the undone days | [`rollback.py`](meterlake/rollback.py) |
 | **Maintenance** | `rewrite_data_files` (applies delete files and rewrites old-spec files into the new layout), `rewrite_manifests`, `expire_snapshots` | [`maintenance.py`](meterlake/maintenance.py) |
 
 ## Quick start
@@ -59,6 +60,7 @@ make install
 make run        # 10 days of meter files through Write-Audit-Publish
 make maintain   # compaction, manifest rewrite, snapshot expiry
 make report     # batches, gold usage, partition specs, snapshots
+python -m meterlake rollback   # undo the latest publish if a problem is found later
 make test
 ```
 

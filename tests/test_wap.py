@@ -9,7 +9,7 @@ import pytest
 
 pytest.importorskip("pyspark")
 
-from meterlake import ingest, tables, wap  # noqa: E402
+from meterlake import ingest, rollback, tables, wap  # noqa: E402
 from meterlake.config import Settings  # noqa: E402
 
 COLUMNS = ["meter_id", "reading_ts", "kwh", "voltage", "revision"]
@@ -107,3 +107,21 @@ def test_partition_evolution_keeps_old_files_readable(spark, lake: Settings) -> 
     specs = {r.spec_id for r in spark.table(f"{lake.table('readings')}.files").select("spec_id").collect()}
     assert specs == {0, 1}
     assert len(main_rows(spark, lake)) == 2
+
+
+def test_rollback_undoes_the_last_publish_and_its_gold(spark, lake: Settings) -> None:
+    ingest.process_batch(spark, lake, land(lake, "2026-02-01", [("M1", "2026-02-01 00:00:00", "0.4", "230", "1")]))
+    after_first = main_rows(spark, lake)
+    ingest.process_batch(spark, lake, land(lake, "2026-02-02", [
+        ("M1", "2026-02-02 00:00:00", "0.6", "230", "1"),
+        ("M1", "2026-02-01 00:00:00", "0.5", "230", "2"),  # correction to day 1
+    ]))
+
+    summary = rollback.rollback(spark, lake)
+
+    assert summary["batches"] == ["2026-02-02"]
+    assert main_rows(spark, lake) == after_first
+    gold = {(str(g.usage_date), g.kwh) for g in spark.table(lake.table("daily_usage")).collect()}
+    assert gold == {("2026-02-01", 0.4)}  # day 2 removed, day 1 rebuilt without the correction
+    statuses = [r.status for r in spark.table(lake.table("batch_log")).filter("batch_id = '2026-02-02'").collect()]
+    assert sorted(statuses) == ["published", "rolled_back"]

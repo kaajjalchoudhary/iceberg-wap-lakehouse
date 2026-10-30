@@ -26,6 +26,8 @@ def main(argv: list[str] | None = None) -> int:
         help="switch readings from monthly to daily partitions from this batch date on",
     )
     sub.add_parser("process", help="process pending batches already in the landing folder")
+    rb = sub.add_parser("rollback", help="move main back to the previous snapshot and rebuild gold")
+    rb.add_argument("--to", type=int, default=None, help="snapshot id (default: parent of main)")
     sub.add_parser("maintain", help="compact files, rewrite manifests, expire snapshots")
     sub.add_parser("report", help="print a summary of the lake")
     args = parser.parse_args(argv)
@@ -38,7 +40,7 @@ def main(argv: list[str] | None = None) -> int:
         if args.command == "generate":
             return 0
 
-    from meterlake import ingest, maintenance, report
+    from meterlake import ingest, maintenance, report, rollback
     from meterlake.spark import get_spark
 
     spark = get_spark(s.warehouse)
@@ -47,6 +49,8 @@ def main(argv: list[str] | None = None) -> int:
             evolve_from = getattr(args, "daily_partitions_from", None)
             ingest.run_pending(spark, s, daily_partitions_from=evolve_from)
             print(report.build_report(spark, s))
+        elif args.command == "rollback":
+            print(rollback.rollback(spark, s, args.to))
         elif args.command == "maintain":
             maintenance.maintain(spark, s)
         elif args.command == "report":
