@@ -24,7 +24,7 @@ jobs:
           cache: pip
 
       - name: Cache Iceberg jars
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: ~/.ivy2
           key: ivy-iceberg-${{ hashFiles('meterlake/spark.py') }}
