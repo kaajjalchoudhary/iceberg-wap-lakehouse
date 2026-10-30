@@ -16,7 +16,7 @@ def maintain(spark: SparkSession, s: Settings, retain_last: int = 5) -> dict:
     ident = s.ident("readings")
     # Compaction also rewrites files written under the old monthly spec into the current daily one.
     compacted = spark.sql(
-        f"CALL {CATALOG}.system.rewrite_data_files(table => '{ident}', options => map('min-input-files', '2'))"
+        f"CALL {CATALOG}.system.rewrite_data_files(table => '{ident}', options => map('min-input-files', '2', 'delete-file-threshold', '1'))"
     ).first()
     manifests = spark.sql(f"CALL {CATALOG}.system.rewrite_manifests('{ident}')").first()
     now = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S")

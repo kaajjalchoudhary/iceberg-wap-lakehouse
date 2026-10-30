@@ -36,13 +36,14 @@ sequenceDiagram
 | **Branches** | Each batch is merged into `audit_<batch>` and audited before anyone can read it | [`wap.py`](meterlake/wap.py), [`ingest.py`](meterlake/ingest.py) |
 | **`fast_forward`** | Publishing is a metadata-only, atomic move of `main` | [`wap.py`](meterlake/wap.py) |
 | **`MERGE INTO`** | Corrections (higher `revision`) replace readings; stale revisions and duplicates do not | [`ingest.py`](meterlake/ingest.py) |
+| **Merge-on-read** | `MERGE` writes small delete files instead of rewriting data files; compaction applies them | [`tables.py`](meterlake/tables.py) |
 | **Hidden partitioning** | `months(reading_ts)`: queries filter on the timestamp, never on a partition column | [`tables.py`](meterlake/tables.py) |
 | **Partition evolution** | Switched to `days(reading_ts)` mid-stream as volume grew; old files keep their old layout | [`tables.py`](meterlake/tables.py) |
 | **Schema evolution** | A new vendor column (`tariff_code`) is added automatically; unknown columns are rejected | [`tables.py`](meterlake/tables.py) |
 | **Dynamic partition overwrite** | Gold is rebuilt only for the days a batch touched | [`gold.py`](meterlake/gold.py) |
 | **Metadata tables** | `refs`, `snapshots`, `history`, `files` drive publishing, tests and the report | [`report.py`](meterlake/report.py) |
 | **Time travel** | Tests read the table as of the previous publish | [`tests/test_pipeline.py`](tests/test_pipeline.py) |
-| **Maintenance** | `rewrite_data_files` (also moves old files to the new spec), `rewrite_manifests`, `expire_snapshots` | [`maintenance.py`](meterlake/maintenance.py) |
+| **Maintenance** | `rewrite_data_files` (applies delete files and moves old files to the new spec), `rewrite_manifests`, `expire_snapshots` | [`maintenance.py`](meterlake/maintenance.py) |
 
 ## Quick start
 

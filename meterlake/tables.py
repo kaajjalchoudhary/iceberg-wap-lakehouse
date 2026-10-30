@@ -35,7 +35,15 @@ def create_tables(spark: SparkSession, s: Settings) -> None:
         )
         USING iceberg
         PARTITIONED BY (months(reading_ts))
-        TBLPROPERTIES ('format-version' = '2', 'write.wap.enabled' = 'true')
+        TBLPROPERTIES (
+            'format-version' = '2',
+            'write.wap.enabled' = 'true',
+            -- Corrections touch a few rows per file. Merge-on-read writes small delete files
+            -- instead of rewriting whole data files; compaction folds the deletes back in.
+            'write.merge.mode' = 'merge-on-read',
+            'write.update.mode' = 'merge-on-read',
+            'write.delete.mode' = 'merge-on-read'
+        )
         """
     )
     spark.sql(
