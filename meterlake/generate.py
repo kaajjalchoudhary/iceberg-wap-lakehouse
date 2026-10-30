@@ -68,7 +68,8 @@ def generate(landing: Path, cfg: GenerateConfig | None = None) -> dict[str, int]
             {
                 "meter_id": f"M{i:04d}",
                 "region": REGIONS[i % len(REGIONS)],
-                "customer_type": "commercial" if i % 6 == 0 else "residential",
+                # Every 5th meter is a business; i % 4 then spreads them across all regions.
+                "customer_type": "commercial" if i % 5 == 0 else "residential",
                 "tariff_code": rng.choice(TARIFFS),
             }
         )

@@ -45,3 +45,10 @@ def test_tariff_column_appears_on_schedule(tmp_path: Path) -> None:
     generate(tmp_path, GenerateConfig(days=5, meters=5, tariff_from_day=3, bad_day=None))
     headers = {p.name: _rows(p)[0].keys() for p in sorted((tmp_path / "readings").glob("*.csv"))}
     assert ["tariff_code" in h for h in headers.values()] == [False, False, False, True, True]
+
+
+def test_commercial_meters_in_every_region(tmp_path: Path) -> None:
+    generate(tmp_path, GenerateConfig(days=1, meters=60))
+    meters = _rows(tmp_path / "meters.csv")
+    commercial_regions = {m["region"] for m in meters if m["customer_type"] == "commercial"}
+    assert commercial_regions == {"North", "South", "East", "West"}
