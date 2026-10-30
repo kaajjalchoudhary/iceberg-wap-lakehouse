@@ -1,0 +1,20 @@
+# Monthly PRs for Python dependencies and GitHub Actions. CI runs the full
+# Write-Audit-Publish pipeline on every PR before anything is merged.
+version: 2
+updates:
+  - package-ecosystem: pip
+    directory: "/"
+    schedule:
+      interval: monthly
+    ignore:
+      # A Spark major changes the Iceberg runtime artifact (iceberg-spark-runtime-<spark>_<scala>).
+      - dependency-name: pyspark
+        update-types: ["version-update:semver-major"]
+    groups:
+      dev-tools:
+        patterns: ["pytest", "ruff"]
+
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: monthly
